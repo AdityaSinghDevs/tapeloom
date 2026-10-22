@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tapeloom"
+version = "0.0.1"
+description = "Reverse-mode autodiff and a GPT from scratch in NumPy, with hand-derived, gradchecked backward passes."
+readme = "README.md"
+requires-python = ">=3.9"
+license = "MIT"
+authors = [{ name = "Your Name" }]
+keywords = [
+    "autograd", "autodiff", "backpropagation", "transformer",
+    "gpt", "attention", "numpy", "deep-learning", "education",
+]
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Intended Audience :: Education",
+    "Intended Audience :: Science/Research",
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = ["numpy"]
+
+[project.optional-dependencies]
+dev = ["pytest"]   #TODO:adding torch later
+examples = ["scikit-learn"]        # moons dataset for the MLP demo
+viz = ["matplotlib", "graphviz"]
+
+[project.urls]
+Homepage = "https://github.com/YOUR_USERNAME/tapeloom"
+Issues = "https://github.com/YOUR_USERNAME/tapeloom/issues"
+
+[tool.setuptools.packages.find]
+include = ["loom*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
