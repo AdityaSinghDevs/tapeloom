@@ -9,7 +9,7 @@ description = "Reverse-mode autodiff and a GPT from scratch in NumPy, with hand-
 readme = "README.md"
 requires-python = ">=3.9"
 license = "MIT"
-authors = [{ name = "Your Name" }]
+authors = [{ name = "Aditya Pratap Singh" }]
 keywords = [
     "autograd", "autodiff", "backpropagation", "transformer",
     "gpt", "attention", "numpy", "deep-learning", "education",
@@ -28,9 +28,10 @@ dev = ["pytest"]   #TODO:adding torch later
 examples = ["scikit-learn"]        # moons dataset for the MLP demo
 viz = ["matplotlib", "graphviz"]
 
+
 [project.urls]
-Homepage = "https://github.com/YOUR_USERNAME/tapeloom"
-Issues = "https://github.com/YOUR_USERNAME/tapeloom/issues"
+Homepage = "https://github.com/AdityaSinghDevs/tapeloom"
+Issues = "https://github.com/AdityaSinghDevs/tapeloom/issues"
 
 [tool.setuptools.packages.find]
 include = ["loom*"]
