@@ -21,7 +21,9 @@ classifiers = [
     "Programming Language :: Python :: 3",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
-dependencies = ["numpy"]
+dependencies = [
+    "numpy",
+]
 
 [project.optional-dependencies]
 dev = ["pytest"]   #TODO:adding torch later

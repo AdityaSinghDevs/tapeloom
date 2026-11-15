@@ -51,6 +51,8 @@ class Value:
         out = Value(math.exp(x), (self,), 'exp')
         def _backward():
             self.grad += out.data * out.grad
+        out._backward = _backward
+
         return out
 
     def __rmul__(self, other):
@@ -72,7 +74,7 @@ class Value:
         t = (math.exp(2*x) - 1)/ (math.exp(2*x) + 1)
         out = Value(t, (self, ), 'tanh')
         def _backward():
-                self.grad += (1- t**2) * out.grad
+            self.grad += (1- t**2) * out.grad
         out._backward = _backward
         
         return out 
