@@ -1,3 +1,271 @@
-tanh: out._backward = _backward was indented inside _backward, so it never ran and the gradient died silently.
-__mul__: the local derivative used .grad where it needed .data, which gave wrong gradients with no error.
-exp: it was missing the assignment and return out, so it returned None.
+
+# TAPELOOM — BUG LOG
+# Tensor Engine: tensor.py
+#
+# Status:
+#   Historical bugs: Fixed
+#   Current baseline: 66/66 tests passing
+#   Remaining: Edge-case hardening and API cleanup
+
+
+============================================================
+1. HISTORICAL BUGS — FIXED
+============================================================
+
+[FIXED] tanh() — Incorrect _backward assignment indentation
+
+Problem:
+    out._backward = _backward was indented inside the
+    _backward function itself.
+
+    Consequently, the backward function was never assigned
+    to the output Tensor, and gradients silently stopped
+    propagating through tanh().
+
+Fix:
+    Move out._backward = _backward outside the nested
+    _backward function.
+
+
+[FIXED] __mul__() — Used .grad instead of .data
+
+Problem:
+    The local derivative in multiplication used .grad
+    where it should have used .data.
+
+    This produced incorrect gradients without raising
+    an exception.
+
+Fix:
+    Use the other operand's data for the local derivative.
+
+    d(a*b)/da = b
+    d(a*b)/db = a
+
+
+[FIXED] exp() — Missing backward assignment and return
+
+Problem:
+    exp() was missing:
+        out._backward = _backward
+        return out
+
+    As a result, exp() returned None and its computation
+    graph was not connected correctly.
+
+Fix:
+    Assign the backward closure and return the output Tensor.
+
+
+============================================================
+2. CURRENT ISSUES — TO FIX
+============================================================
+
+[OPEN] transpose() — Negative axis handling
+
+Problem:
+    np.argsort(axes) does not correctly calculate the
+    inverse permutation when axes contains negative indices.
+
+Required:
+    Normalize negative axes before computing the inverse
+    permutation.
+
+Test:
+    Test a 3D Tensor with negative transpose axes and
+    verify both forward values and backward gradients.
+
+
+[OPEN] transpose() — Tuple-style axes support
+
+Problem:
+    Current signature:
+        transpose(self, *axes)
+
+    Calling:
+        x.transpose((1, 0))
+
+    produces a nested tuple and may fail.
+
+Required:
+    Support both:
+        x.transpose(1, 0)
+        x.transpose((1, 0))
+
+    Validate that axes form a valid permutation.
+
+
+[OPEN] __pow__() — Zero exponent edge case
+
+Problem:
+    The derivative formula:
+        other * self.data ** (other - 1)
+
+    can produce NaN at x = 0 when the exponent is zero.
+
+Required:
+    Handle exponent zero explicitly.
+
+Expected:
+    x ** 0 = 1
+    d(x ** 0)/dx = 0
+
+
+[OPEN] backward() — Repeated backward semantics
+
+Problem:
+    backward() resets the root gradient to ones, but
+    intermediate and leaf gradients are not reset.
+
+    Calling backward() repeatedly therefore accumulates
+    gradients across calls.
+
+Required:
+    Decide and document the intended accumulation semantics.
+
+    Add zero_grad() to reset gradients explicitly.
+
+    Ensure training examples clear gradients between
+    independent optimization steps.
+
+
+[OPEN] backward() — Recursive topological sorting
+
+Problem:
+    Current implementation uses recursive DFS to build
+    the topological ordering.
+
+    Deep computation graphs may exceed Python's recursion
+    limit.
+
+Required:
+    Replace recursive traversal with iterative topological
+    sorting.
+
+    Preserve correct parent-before-child ordering for
+    forward traversal and reverse ordering for backprop.
+
+
+[OPEN] unbroadcast() — Output shape validation
+
+Problem:
+    The function currently returns the reduced gradient
+    without explicitly checking that its shape matches
+    the original operand shape.
+
+Required:
+    Add a final shape assertion:
+        grad.shape == target_shape
+
+    Test scalar, singleton-dimension and multi-dimensional
+    broadcasting cases.
+
+
+[OPEN] API completeness — Missing convenience methods
+
+Required methods:
+
+    zero_grad()
+        Reset the Tensor's accumulated gradient.
+
+    item()
+        Return a Python scalar from a single-element Tensor.
+
+    numpy()
+        Return the underlying NumPy representation.
+
+Requirements:
+    Define expected behavior and add tests for each method.
+
+
+============================================================
+3. DEFERRED EDGE CASES
+============================================================
+
+[DEFERRED] mean() — Empty tensor and zero-sized reductions
+
+Problem:
+    Current implementation calculates the reduction count
+    using:
+        self.data.size // s.data.size
+
+    Empty dimensions can cause division-by-zero or
+    undefined mean behavior.
+
+Required:
+    Decide and document behavior for empty reductions.
+    Add tests if empty tensors are supported.
+
+
+[DEFERRED] Numerical and domain edge cases
+
+Review behavior for:
+    - log() with zero or negative inputs.
+    - exp() overflow.
+    - Division by zero.
+    - ReLU derivative at exactly zero.
+    - Invalid reshape dimensions.
+    - Invalid transpose axes.
+
+These should have deliberate behavior and tests.
+
+
+============================================================
+4. VALIDATION STATUS
+============================================================
+
+Baseline test runner:
+    loom/test.py
+
+Latest result:
+    Total tests: 66
+    Passed:      66
+    Failed:       0
+
+Verified:
+    - Tensor construction and properties
+    - Addition and multiplication
+    - Broadcasting and unbroadcasting
+    - Arithmetic and reflected operations
+    - Power
+    - exp(), log(), relu()
+    - sum() and mean()
+    - reshape() and transpose()
+    - Shared computation graphs
+    - Gradient accumulation
+    - Numerical gradient checks
+
+IMPORTANT:
+    Passing the current 66 tests does not mean all listed
+    edge cases have been resolved.
+
+    Every fix must be accompanied by a regression test.
+
+
+============================================================
+5. COMPLETION CRITERIA — TENSOR ENGINE v0.1
+============================================================
+
+[ ] Fix all OPEN issues.
+[ ] Review DEFERRED edge cases and define API behavior.
+[ ] Implement zero_grad(), item() and numpy().
+[ ] Replace recursive topological sorting.
+[ ] Expand regression tests.
+[ ] Run the complete test suite.
+[ ] Verify all numerical gradient checks.
+[ ] Document Tensor API and backward() semantics.
+
+Once complete:
+    Freeze tensor.py for v0.1.
+
+    Higher-level differentiable operations belong in
+    functional.py, not tensor.py.
+
+    Examples:
+        matmul
+        softmax
+        log_softmax
+        cross_entropy
+        layer_norm
+        masked_fill
+        dropout

@@ -10,6 +10,8 @@ def unbroadcast(grad, target_shape):
             if t==1 and g!=1:
                 grad = grad.sum(axis=i, keepdims=True)
 
+        assert grad.shape == target_shape
+        
         return grad 
 
 class Tensor:
@@ -160,19 +162,44 @@ class Tensor:
 
 
     
-    def backward(self):
-        topo = []
-        visited = set()
-        def build_topo(v):
-            if v not in visited:
-                visited.add(v)
-                for child in v._prev:
-                    build_topo(child)
-                topo.append(v)
-        build_topo(self)
+    # def backward(self):
+    #     topo = []
+    #     visited = set()
+    #     def build_topo(v):
+    #         if v not in visited:
+    #             visited.add(v)
+    #             for child in v._prev:
+    #                 build_topo(child)
+    #             topo.append(v)
+    #     build_topo(self)
 
+    #     self.grad = np.ones_like(self.data)
+    #     for node in reversed(topo):
+    #         node._backward()
+
+
+    def backward(self):
+        topo, visited = [], set()
+        stack = [(self, False)]
+        while stack:
+            node, expanded = stack.pop()
+            if expanded:
+                topo.append(node)
+            elif node not in visited:
+                visited.add(node)
+                stack.append((node, True))
+                for p in node._prev:
+                    stack.append((p, False))
         self.grad = np.ones_like(self.data)
         for node in reversed(topo):
             node._backward()
 
 
+    def zero_grad(self):
+        self.grad = np.zeros_like(self.data)
+
+    def item(self):
+        return self.data.item()
+
+    def numpy(self):
+        return self.data.copy()
